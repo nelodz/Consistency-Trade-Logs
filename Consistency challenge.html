@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consistency Challenge — Trading Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1128;
+    --surface:#111A38;
+    --surface-2:#182352;
+    --border:#28336A;
+    --border-soft:#1E294F;
+    --text:#F4F6FB;
+    --text-dim:#8A92BE;
+    --text-faint:#535E92;
+    --pass:#34D399;
+    --pass-dim:#0F3B30;
+    --fail:#F8717A;
+    --fail-dim:#3B1420;
+    --today:#5FA8FF;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 0%, #16214A 0%, transparent 45%),
+      radial-gradient(circle at 90% 10%, #131D42 0%, transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:32px 16px 80px;
+  }
+  .wrap{ max-width:560px; margin:0 auto; }
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:var(--today);
+    box-shadow:0 0 8px var(--today);
+  }
+  h1{
+    font-family:var(--sans);
+    font-weight:800;
+    font-size:30px;
+    letter-spacing:-0.02em;
+    margin:0 0 4px;
+  }
+  .sub{ color:var(--text-dim); font-size:14px; margin-bottom:28px; }
+
+  .card{
+    background:linear-gradient(180deg, var(--surface) 0%, #0E1636 100%);
+    border:1px solid var(--border-soft);
+    border-radius:18px;
+    padding:20px 18px 22px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.6);
+  }
+
+  .month-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .month-nav button{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    width:34px;height:34px;
+    border-radius:9px;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .month-nav button:hover{ background:#223070; }
+  .month-title{
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  .weekdays{
+    display:grid; grid-template-columns:repeat(7,1fr);
+    gap:6px; margin-bottom:6px;
+  }
+  .weekdays span{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-faint);
+    letter-spacing:.08em;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(7, minmax(0,1fr));
+    gap:6px;
+  }
+  .cell{
+    width:100%;
+    aspect-ratio:1/1;
+    min-width:0;
+    border-radius:10px;
+    border:1px solid var(--border-soft);
+    background:var(--surface-2);
+    display:flex; flex-direction:column;
+    align-items:flex-start; justify-content:flex-start;
+    padding:6px 7px;
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--text-dim);
+    position:relative;
+    cursor:default;
+    transition:transform .12s ease, border-color .15s;
+  }
+  .cell.empty{ visibility:hidden; }
+  .cell.actionable{ cursor:pointer; color:var(--text); }
+  .cell.actionable:hover{ border-color:var(--today); transform:translateY(-1px); }
+
+  .cell.today{
+    border:1.5px solid var(--today);
+    box-shadow:0 0 0 3px rgba(95,168,255,.12);
+  }
+  .cell.today::after{
+    content:"TODAY";
+    position:absolute; bottom:5px; left:7px; right:7px;
+    font-size:8px; letter-spacing:.1em;
+    color:var(--today);
+  }
+
+  .cell.pass{
+    background:linear-gradient(160deg, var(--pass-dim), #0B2A22);
+    border-color:var(--pass);
+    color:#B7F5DE;
+  }
+  .cell.fail{
+    background:linear-gradient(160deg, var(--fail-dim), #2A0F17);
+    border-color:var(--fail);
+    color:#FBC7CC;
+  }
+  .cell.locked::before{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:9px;
+    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 2px, transparent 2px 9px);
+    pointer-events:none;
+  }
+  .cell.locked .mark{
+    position:absolute; top:5px; right:6px;
+    font-size:11px; font-weight:700;
+  }
+  .cell.pass .mark::before{ content:"✓"; color:var(--pass); }
+  .cell.fail .mark::before{ content:"✕"; color:var(--fail); }
+
+  .legend{
+    display:flex; gap:16px; margin-top:16px;
+    font-size:11px; color:var(--text-faint);
+    font-family:var(--mono);
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:9px;height:9px;border-radius:3px; display:inline-block; }
+  .dot.pass{ background:var(--pass); }
+  .dot.fail{ background:var(--fail); }
+  .dot.today{ background:transparent; border:1.5px solid var(--today); }
+
+  /* Modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(6,9,26,.72);
+    backdrop-filter:blur(3px);
+    display:none; align-items:flex-end; justify-content:center;
+    z-index:50; padding:0;
+  }
+  .overlay.open{ display:flex; }
+  @media(min-width:600px){
+    .overlay{ align-items:center; }
+  }
+  .modal{
+    width:100%; max-width:520px;
+    background:linear-gradient(180deg, #131D42, #0C1330);
+    border:1px solid var(--border);
+    border-top-left-radius:20px; border-top-right-radius:20px;
+    padding:22px 20px 24px;
+    max-height:88vh; overflow-y:auto;
+    animation:rise .25s ease;
+  }
+  @media(min-width:600px){
+    .modal{ border-radius:20px; }
+  }
+  @keyframes rise{ from{ transform:translateY(24px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+
+  .modal-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:4px;
+  }
+  .modal-date{
+    font-family:var(--mono); font-size:12px; color:var(--text-faint);
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+  .modal-title{ font-size:19px; font-weight:800; margin:2px 0 16px; }
+  .close-btn{
+    background:none; border:none; color:var(--text-dim);
+    font-size:20px; cursor:pointer; line-height:1; padding:2px 4px;
+  }
+
+  .status-banner{
+    display:none;
+    border-radius:12px; padding:14px 14px;
+    font-family:var(--mono); font-size:13px;
+    margin-bottom:16px; border:1px solid;
+  }
+  .status-banner.pass{ display:block; background:var(--pass-dim); border-color:var(--pass); color:#B7F5DE; }
+  .status-banner.fail{ display:block; background:var(--fail-dim); border-color:var(--fail); color:#FBC7CC; }
+
+  .checklist{ display:flex; flex-direction:column; gap:2px; margin-bottom:18px; }
+  .item{
+    display:flex; align-items:center; gap:12px;
+    padding:11px 4px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .item:last-child{ border-bottom:none; }
+  .box{
+    width:22px; height:22px; flex:0 0 22px;
+    border-radius:6px; border:1.5px solid var(--border);
+    background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:.15s;
+    color:transparent; font-size:14px; font-weight:700;
+  }
+  .box.checked{ background:var(--today); border-color:var(--today); color:#081226; }
+  .box.disabled{ cursor:default; }
+  .item label{ font-size:14.5px; color:var(--text); cursor:pointer; }
+  .item.locked-item .box, .item.locked-item label{ cursor:default; opacity:.85; }
+
+  .submit-btn{
+    width:100%; padding:14px; border:none; border-radius:12px;
+    background:var(--today); color:#081226;
+    font-family:var(--sans); font-weight:700; font-size:15px;
+    cursor:pointer; letter-spacing:.01em;
+    transition:filter .15s, transform .1s;
+  }
+  .submit-btn:hover{ filter:brightness(1.08); }
+  .submit-btn:active{ transform:scale(.99); }
+  .submit-btn:disabled{
+    background:var(--surface-2); color:var(--text-faint); cursor:not-allowed;
+  }
+
+  .note{
+    font-size:12px; color:var(--text-faint); text-align:center; margin-top:10px;
+    line-height:1.5;
+  }
+  .locked-note{
+    font-size:13px; color:var(--text-dim); text-align:center;
+    padding:24px 10px; font-family:var(--mono);
+  }
+  .unavailable-note{
+    font-size:13px; color:var(--text-faint); text-align:center;
+    padding:24px 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Trading Discipline Log</div>
+  <h1>Consistency Challenge</h1>
+  <p class="sub">Check every rule before pressing OK. Once submitted, it's permanent.</p>
+
+  <div class="card">
+    <div class="month-nav">
+      <button id="prevBtn" aria-label="Previous month">‹</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button id="nextBtn" aria-label="Next month">›</button>
+    </div>
+    <div class="weekdays">
+      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span><i class="dot pass"></i>Followed</span>
+      <span><i class="dot fail"></i>Broke rules</span>
+      <span><i class="dot today"></i>Today</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-date" id="modalDate"></div>
+        <div class="modal-title">Checklist</div>
+      </div>
+      <button class="close-btn" id="closeBtn">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const RULES = [
+  "1 Trade week Days",
+  "1:3 Ratio",
+  "Risk 3%",
+  "Trade New York Session",
+  "Breakout Position closed candle",
+  "Minimum 15 pips Stop loss",
+  "No trade weekend",
+  "Compounding R:R balance",
+  "Do not close trade until TP/SL",
+  "SNDK/USDT Only",
+  "Do not use other System",
+  "Followed the rules"
+];
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let view = new Date();
+view.setDate(1);
+
+const todayKey = fmtKey(new Date());
+
+function fmtKey(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+async function getRecord(key){
+  try{
+    const res = await window.storage.get('checklist:'+key, false);
+    return res ? JSON.parse(res.value) : null;
+  }catch(e){ return null; }
+}
+async function setRecord(key, data){
+  try{
+    await window.storage.set('checklist:'+key, JSON.stringify(data), false);
+  }catch(e){ console.error('Storage error', e); }
+}
+
+async function renderCalendar(){
+  document.getElementById('monthTitle').textContent = MONTHS[view.getMonth()].toUpperCase()+" "+view.getFullYear();
+  const grid = document.getElementById('grid');
+  grid.innerHTML = "";
+
+  const firstDay = new Date(view.getFullYear(), view.getMonth(), 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(view.getFullYear(), view.getMonth()+1, 0).getDate();
+
+  for(let d=1; d<=daysInMonth; d++){
+    const cellDate = new Date(view.getFullYear(), view.getMonth(), d);
+    const key = fmtKey(cellDate);
+    const index = startOffset + (d - 1);
+    const row = Math.floor(index / 7) + 1;
+    const col = (index % 7) + 1;
+
+    const cell = document.createElement('div');
+    cell.className = 'cell actionable';
+    cell.style.gridRow = row;
+    cell.style.gridColumn = col;
+    if(key === todayKey) cell.classList.add('today');
+
+    const num = document.createElement('span');
+    num.textContent = d;
+    cell.appendChild(num);
+
+    const rec = await getRecord(key);
+    if(rec && rec.status){
+      cell.classList.add('locked', rec.status);
+      const mark = document.createElement('span');
+      mark.className = 'mark';
+      cell.appendChild(mark);
+    }
+
+    cell.addEventListener('click', () => openModal(key, cellDate, rec));
+    grid.appendChild(cell);
+  }
+}
+
+async function openModal(key, dateObj, rec){
+  const overlay = document.getElementById('overlay');
+  const body = document.getElementById('modalBody');
+  document.getElementById('modalDate').textContent =
+    dateObj.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
+  body.innerHTML = "";
+
+  if(rec && rec.status){
+    // Locked, already submitted — read only
+    const banner = document.createElement('div');
+    banner.className = 'status-banner ' + rec.status;
+    banner.textContent = rec.status === 'pass'
+      ? '✓ Submitted — every rule was followed. This cannot be changed.'
+      : '✕ Submitted — one or more rules were broken. This cannot be changed.';
+    body.appendChild(banner);
+
+    const list = document.createElement('div');
+    list.className = 'checklist';
+    RULES.forEach((rule, i) => {
+      const checked = rec.checks && rec.checks[i];
+      const item = document.createElement('div');
+      item.className = 'item locked-item';
+      item.innerHTML = `<div class="box disabled ${checked ? 'checked' : ''}">${checked ? '✓' : ''}</div><label>${rule}</label>`;
+      list.appendChild(item);
+    });
+    body.appendChild(list);
+
+    const note = document.createElement('div');
+    note.className = 'locked-note';
+    note.textContent = 'This day is locked.';
+    body.appendChild(note);
+
+  } else if(key !== todayKey){
+    // Only today's checklist can be filled
+    const note = document.createElement('div');
+    note.className = 'unavailable-note';
+    note.textContent = dateObj < new Date(new Date().setHours(0,0,0,0))
+      ? 'Past days can no longer be filled in.'
+      : 'The checklist can only be filled in on the current day.';
+    body.appendChild(note);
+
+  } else {
+    // Today, not yet submitted — interactive
+    const checks = new Array(RULES.length).fill(false);
+
+    const list = document.createElement('div');
+    list.className = 'checklist';
+    RULES.forEach((rule, i) => {
+      const item = document.createElement('div');
+      item.className = 'item';
+      const box = document.createElement('div');
+      box.className = 'box';
+      item.appendChild(box);
+      const label = document.createElement('label');
+      label.textContent = rule;
+      item.appendChild(label);
+
+      const toggle = () => {
+        checks[i] = !checks[i];
+        box.classList.toggle('checked', checks[i]);
+        box.textContent = checks[i] ? '✓' : '';
+      };
+      box.addEventListener('click', toggle);
+      label.addEventListener('click', toggle);
+      list.appendChild(item);
+    });
+    body.appendChild(list);
+
+    const btn = document.createElement('button');
+    btn.className = 'submit-btn';
+    btn.textContent = 'OK — Submit';
+    btn.addEventListener('click', async () => {
+      const allChecked = checks.every(c => c);
+      const status = allChecked ? 'pass' : 'fail';
+      const checkMap = {};
+      checks.forEach((c,i) => checkMap[i]=c);
+      await setRecord(key, { status, checks: checkMap, submittedAt: new Date().toISOString() });
+      closeModal();
+      renderCalendar();
+    });
+    body.appendChild(btn);
+
+    const note = document.createElement('div');
+    note.className = 'note';
+    note.textContent = 'Warning: once submitted, this cannot be undone or changed.';
+    body.appendChild(note);
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.getElementById('closeBtn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'overlay') closeModal();
+});
+document.getElementById('prevBtn').addEventListener('click', () => {
+  view.setMonth(view.getMonth()-1);
+  renderCalendar();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  view.setMonth(view.getMonth()+1);
+  renderCalendar();
+});
+
+renderCalendar();
+</script>
+</body>
+</html>
