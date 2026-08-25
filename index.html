@@ -34,10 +34,7 @@
   body{
     margin:0;
     min-height:100vh;
-    background:
-      radial-gradient(circle at 15% 0%, #16214A 0%, transparent 45%),
-      radial-gradient(circle at 90% 10%, #131D42 0%, transparent 40%),
-      var(--bg);
+    background:var(--bg);
     color:var(--text);
     font-family:var(--sans);
     padding:32px 16px 80px;
@@ -71,7 +68,7 @@
   .sub{ color:var(--text-dim); font-size:14px; margin-bottom:28px; }
 
   .card{
-    background:linear-gradient(180deg, var(--surface) 0%, #0E1636 100%);
+    background:var(--surface);
     border:1px solid var(--border-soft);
     border-radius:18px;
     padding:20px 18px 22px;
@@ -150,23 +147,20 @@
     font-size:8px; letter-spacing:.1em;
     color:var(--today);
   }
+  .cell.locked.today::after{
+    color:currentColor;
+    opacity:.8;
+  }
 
   .cell.pass{
-    background:linear-gradient(160deg, var(--pass-dim), #0B2A22);
+    background:var(--pass-dim);
     border-color:var(--pass);
-    color:#B7F5DE;
+    color:var(--text);
   }
   .cell.fail{
-    background:linear-gradient(160deg, var(--fail-dim), #2A0F17);
+    background:var(--fail-dim);
     border-color:var(--fail);
-    color:#FBC7CC;
-  }
-  .cell.locked::before{
-    content:"";
-    position:absolute; inset:0;
-    border-radius:9px;
-    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 2px, transparent 2px 9px);
-    pointer-events:none;
+    color:var(--text);
   }
   .cell.locked .mark{
     position:absolute; top:5px; right:6px;
@@ -199,7 +193,7 @@
   }
   .modal{
     width:100%; max-width:520px;
-    background:linear-gradient(180deg, #131D42, #0C1330);
+    background:var(--surface);
     border:1px solid var(--border);
     border-top-left-radius:20px; border-top-right-radius:20px;
     padding:22px 20px 24px;
@@ -231,8 +225,8 @@
     font-family:var(--mono); font-size:13px;
     margin-bottom:16px; border:1px solid;
   }
-  .status-banner.pass{ display:block; background:var(--pass-dim); border-color:var(--pass); color:#B7F5DE; }
-  .status-banner.fail{ display:block; background:var(--fail-dim); border-color:var(--fail); color:#FBC7CC; }
+  .status-banner.pass{ display:block; background:var(--pass-dim); border-color:var(--pass); color:var(--text); }
+  .status-banner.fail{ display:block; background:var(--fail-dim); border-color:var(--fail); color:var(--text); }
 
   .checklist{ display:flex; flex-direction:column; gap:2px; margin-bottom:18px; }
   .item{
@@ -287,23 +281,13 @@
     --today:#2E6FE0;
   }
   html[data-theme="light"] body{
-    background:
-      radial-gradient(circle at 15% 0%, #EAF0FF 0%, transparent 45%),
-      radial-gradient(circle at 90% 10%, #F0F3FF 0%, transparent 40%),
-      var(--bg);
+    background:var(--bg);
   }
   html[data-theme="light"] .card{
-    background:linear-gradient(180deg, var(--surface) 0%, #F7F9FF 100%);
     box-shadow:0 20px 40px -24px rgba(30,45,110,.18);
-  }
-  html[data-theme="light"] .modal{
-    background:linear-gradient(180deg, #FFFFFF, #F5F7FE);
   }
   html[data-theme="light"] .box.checked{ color:#FFFFFF; }
   html[data-theme="light"] .submit-btn{ color:#FFFFFF; }
-  html[data-theme="light"] .cell.locked::before{
-    background-image:repeating-linear-gradient(135deg, rgba(20,25,60,.035) 0 2px, transparent 2px 9px);
-  }
   html[data-theme="light"] .overlay{ background:rgba(20,25,55,.35); }
 
   .theme-toggle{
