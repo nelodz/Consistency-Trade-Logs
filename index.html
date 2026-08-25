@@ -24,7 +24,13 @@
     --mono:'IBM Plex Mono', monospace;
     --sans:'Inter', sans-serif;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  button, .cell, .box, .item, label{
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    user-select:none;
+  }
+  button:focus, .cell:focus, .box:focus{ outline:none; }
   body{
     margin:0;
     min-height:100vh;
@@ -265,6 +271,65 @@
     font-size:12px; color:var(--text-faint); text-align:center; margin-top:10px;
     line-height:1.5;
   }
+  html[data-theme="light"]{
+    --bg:#F3F5FC;
+    --surface:#FFFFFF;
+    --surface-2:#EEF1FA;
+    --border:#D6DCF2;
+    --border-soft:#E4E9F8;
+    --text:#151A34;
+    --text-dim:#5B6389;
+    --text-faint:#9098BE;
+    --pass:#0FA36B;
+    --pass-dim:#DFF6EA;
+    --fail:#E23A4E;
+    --fail-dim:#FCE2E5;
+    --today:#2E6FE0;
+  }
+  html[data-theme="light"] body{
+    background:
+      radial-gradient(circle at 15% 0%, #EAF0FF 0%, transparent 45%),
+      radial-gradient(circle at 90% 10%, #F0F3FF 0%, transparent 40%),
+      var(--bg);
+  }
+  html[data-theme="light"] .card{
+    background:linear-gradient(180deg, var(--surface) 0%, #F7F9FF 100%);
+    box-shadow:0 20px 40px -24px rgba(30,45,110,.18);
+  }
+  html[data-theme="light"] .modal{
+    background:linear-gradient(180deg, #FFFFFF, #F5F7FE);
+  }
+  html[data-theme="light"] .box.checked{ color:#FFFFFF; }
+  html[data-theme="light"] .submit-btn{ color:#FFFFFF; }
+  html[data-theme="light"] .cell.locked::before{
+    background-image:repeating-linear-gradient(135deg, rgba(20,25,60,.035) 0 2px, transparent 2px 9px);
+  }
+  html[data-theme="light"] .overlay{ background:rgba(20,25,55,.35); }
+
+  .theme-toggle{
+    position:relative;
+    width:52px; height:28px;
+    flex-shrink:0;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    cursor:pointer;
+    padding:0;
+  }
+  .theme-toggle .knob{
+    position:absolute;
+    top:2px; left:2px;
+    width:22px; height:22px;
+    border-radius:50%;
+    background:var(--today);
+    color:#081226;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+    transition:left .2s ease, background .2s ease;
+  }
+  html[data-theme="light"] .theme-toggle .knob{
+    left:26px;
+  }
   .locked-note{
     font-size:13px; color:var(--text-dim); text-align:center;
     padding:24px 10px; font-family:var(--mono);
@@ -274,10 +339,16 @@
     padding:24px 10px;
   }
 </style>
+
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Trading Discipline Log</div>
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px;">
+    <div class="eyebrow" style="margin-bottom:0;">Trading Discipline Log</div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark or light mode">
+      <span class="knob" id="themeKnob">●</span>
+    </button>
+  </div>
   <h1>Consistency Challenge</h1>
   <p class="sub">Check every rule before pressing OK. Once submitted, it's permanent.</p>
 
@@ -341,13 +412,13 @@ function fmtKey(d){
 
 async function getRecord(key){
   try{
-    const res = await window.storage.get('checklist:'+key, false);
-    return res ? JSON.parse(res.value) : null;
-  }catch(e){ return null; }
+    const raw = localStorage.getItem('checklist:'+key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ console.error('Storage error', e); return null; }
 }
 async function setRecord(key, data){
   try{
-    await window.storage.set('checklist:'+key, JSON.stringify(data), false);
+    localStorage.setItem('checklist:'+key, JSON.stringify(data));
   }catch(e){ console.error('Storage error', e); }
 }
 
@@ -499,6 +570,39 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   renderCalendar();
 });
 
+let currentTheme = 'dark';
+
+async function initTheme(){
+  let saved = null;
+  try{
+    const raw = localStorage.getItem('theme-preference');
+    saved = raw ? JSON.parse(raw) : null;
+  }catch(e){ saved = null; }
+  const theme = (saved && saved.theme) ? saved.theme : 'dark';
+  applyTheme(theme);
+}
+
+function applyTheme(theme){
+  currentTheme = theme;
+  if(theme === 'light'){
+    document.documentElement.setAttribute('data-theme', 'light');
+  }else{
+    document.documentElement.removeAttribute('data-theme');
+  }
+  document.getElementById('themeKnob').textContent = theme === 'light' ? '○' : '●';
+}
+
+async function setTheme(theme){
+  applyTheme(theme);
+  try{
+    localStorage.setItem('theme-preference', JSON.stringify({ theme }));
+  }catch(e){ console.error('Storage error', e); }
+}
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  setTheme(currentTheme === 'light' ? 'dark' : 'light');
+});
+initTheme();
 renderCalendar();
 </script>
 </body>
