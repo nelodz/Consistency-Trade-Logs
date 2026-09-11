@@ -369,7 +369,7 @@
 
 <script>
 const RULES = [
-  "1 Trade Daily",
+  "1 Trade week Days",
   "1:3 Ratio",
   "Risk 3%",
   "Trade New York Session",
@@ -478,17 +478,15 @@ async function openModal(key, dateObj, rec){
     note.textContent = 'This day is locked.';
     body.appendChild(note);
 
-  } else if(key !== todayKey){
-    // Only today's checklist can be filled
+  } else if(dateObj > new Date(new Date().setHours(0,0,0,0))){
+    // Future dates cannot be submitted in advance
     const note = document.createElement('div');
     note.className = 'unavailable-note';
-    note.textContent = dateObj < new Date(new Date().setHours(0,0,0,0))
-      ? 'Past days can no longer be filled in.'
-      : 'The checklist can only be filled in on the current day.';
+    note.textContent = 'You can\'t submit a future date in advance. Come back on that day.';
     body.appendChild(note);
 
   } else {
-    // Today, not yet submitted — interactive
+    // Today or any unsubmitted past day — interactive
     const checks = new Array(RULES.length).fill(false);
 
     const list = document.createElement('div');
